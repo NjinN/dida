@@ -7,17 +7,21 @@ import 'serverResponse.dart';
 import 'serverException.dart';
 import './db.dart';
 import '../conf.dart';
+import 'worker.dart';
 
 class Router {
+  Worker? worker;
   SplayTreeMap getMap = SplayTreeMap();
   SplayTreeMap postMap = SplayTreeMap();
   List<Function> beforeWare = [];
   List<Function> afterWare = [];
   DB db = DB();
-  bool hasCrossDomain = CONF.containsKey('cross_domain') && (CONF['cross_domain'] as List).length > 0;
+  bool hasCrossDomain = CONF.containsKey('cross_domain') &&
+      (CONF['cross_domain'] as List).length > 0;
+
 
   initDB() async {
-    await db.initPool();
+    await db.initPool(worker);
   }
 
   addBeforeWare(Function f) {
@@ -67,10 +71,10 @@ class Router {
       String url = request.uri.path;
 
       if (request.method == "GET") {
-        if(hasCrossDomain){
+        if (hasCrossDomain) {
           checkCrossDomain(request, response);
         }
-        
+
         if (getMap.containsKey(url)) {
           Route route = getMap[url];
           if (route.beforeWare.length > 0) {
@@ -80,7 +84,7 @@ class Router {
           }
 
           if (route.useDB) {
-            await db.usePool((ctx) async {
+            await db.usePool(response, (ctx) async {
               await route.fn(request, response, ctx);
             });
           } else {
@@ -97,7 +101,7 @@ class Router {
           response.data = "No such method";
         }
       } else if (request.method == "POST") {
-        if(hasCrossDomain){
+        if (hasCrossDomain) {
           checkCrossDomain(request, response);
         }
 
@@ -110,7 +114,7 @@ class Router {
           }
 
           if (route.useDB) {
-            await db.usePool((ctx) async {
+            await db.usePool(response, (ctx) async {
               await route.fn(request, response, ctx);
             });
           } else {
@@ -173,10 +177,12 @@ class Router {
       response.code = e.code;
       response.data = e.message;
       response.contentType = ContentType.text.toString();
-    } catch (e) {
+    } catch (e, s) {
       response.code = 500;
       response.data = e.toString();
       response.contentType = ContentType.text.toString();
+      worker?.logError('Error: ${e.toString()}\r\n${s.toString()}');
+      print('${e.toString()}\r\n${s.toString()}');
     }
 
     return response;

@@ -3,11 +3,15 @@ import 'dart:io';
 import 'package:mysql1/mysql1.dart';
 import '../conf.dart';
 import './serverException.dart';
+import './serverResponse.dart';
+import './dbConnection.dart';
+import 'worker.dart';
 
 class DB {
-  MySqlConnection? conn;
+  Worker? worker;
+  DbConnection? conn;
   ConnectionSettings? settings;
-  List<MySqlConnection>? pool;
+  List<DbConnection>? pool;
   int poolSize = 1;
 
   init() async {
@@ -22,17 +26,18 @@ class DB {
         user: dbConf['user'] as String,
         password: dbConf['password'] as String,
         db: dbConf['db'] as String);
-    conn = await MySqlConnection.connect(settings!);
+    conn = DbConnection(await MySqlConnection.connect(settings!), worker);
   }
 
-  Future<MySqlConnection?> makeConn() async {
+  Future<DbConnection?> makeConn() async {
     if (settings == null) {
       return null;
     }
-    return await MySqlConnection.connect(settings!);
+    return DbConnection(await MySqlConnection.connect(settings!), worker);
   }
 
-  initPool() async {
+  initPool(Worker? w) async {
+    worker = w;
     if (!CONF.containsKey('db')) {
       return;
     }
@@ -52,11 +57,11 @@ class DB {
     }
     pool = [];
     for (var i = 0; i < poolSize; i++) {
-      pool!.add(await MySqlConnection.connect(settings!));
+      pool!.add(DbConnection(await MySqlConnection.connect(settings!), worker));
     }
   }
 
-  usePool(Function f, {bool newConn = false}) async {
+  usePool(ServerResponse res, Function f, {bool newConn = false}) async {
     dynamic conn = null;
     try {
       if (pool == null) {
@@ -69,17 +74,18 @@ class DB {
           throw e;
         });
       }
-      if (conn is! MySqlConnection) {
+      if (conn is! DbConnection) {
         throw Exception("Fail to apply db conn");
       }
-      await conn.query('start transaction');
+      await conn.query('start transaction', [], log: false);
+
       try {
         await f(conn);
       } catch (e) {
-        await conn.query('rollback');
+        await conn.query('rollback', [], log: false);
         rethrow;
       }
-      await conn.query('commit');
+      await conn.query('commit', [], log: false);
 
       // await conn.transaction((ctx) async {
       //   try {
@@ -103,7 +109,7 @@ class DB {
       // });
     } catch (e) {
       if (e is MySqlException && e.errorNumber == 1043) {
-        if (conn is MySqlConnection) {
+        if (conn is DbConnection) {
           try {
             conn.close();
           } catch (e) {
@@ -111,12 +117,12 @@ class DB {
           }
           conn = null;
         }
-        await usePool(f, newConn: true);
+        await usePool(res, f, newConn: true);
       } else {
         rethrow;
       }
     } finally {
-      if (conn is MySqlConnection) {
+      if (conn is DbConnection) {
         revertPoool(conn);
       }
     }
@@ -135,7 +141,7 @@ class DB {
     }
   }
 
-  revertPoool(MySqlConnection conn) {
+  revertPoool(DbConnection conn) {
     if (pool!.length >= poolSize) {
       conn.close();
     } else {
