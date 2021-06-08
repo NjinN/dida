@@ -1,3 +1,6 @@
+import '../core/dbConnection.dart';
+import './dd.dart';
+
 class Sqlx {
   String sqlMode = "SELECT";
 
@@ -97,6 +100,11 @@ class Sqlx {
             whereStr += " AND ?";
             params.add(v);
           }
+        } else if (k.endsWith("__ne")) {
+          var attr = k.substring(0, k.length - 4);
+
+          whereStr += "AND ${alias + attr} <> ? ";
+          params.add(v!);
         } else if (k.endsWith("__like")) {
           var attr = k.substring(0, k.length - 6);
 
@@ -165,8 +173,9 @@ class Sqlx {
           params.add(v[1]);
         } else if (v is List) {
           var list = v;
-          if (list.length > 0) {
-            var str = " AND ${alias + k} IN (";
+          if (k.endsWith("__in") && list.length > 0) {
+            var attr = k.substring(0, k.length - 4);
+            var str = " AND ${alias + attr} IN (";
             for (var i = 0; i < list.length; i++) {
               str += "?";
               params.add(list[i]);
@@ -177,58 +186,11 @@ class Sqlx {
               }
             }
             whereStr += str;
+          } else {
+            whereStr += " AND " + whereList(list, alias + k);
           }
         } else if (v is Map) {
-          v.forEach((key, value) {
-            if (key == 'eq') {
-              whereStr += " AND ${alias + k} = ? ";
-              params.add(value);
-            }else if(key == 'like'){
-              whereStr += " AND ${alias + k} LIKE CONCAT('%', ?, '%') ";
-              params.add(value);
-            }else if(key == 'llike'){
-              whereStr += " AND ${alias + k} LIKE CONCAT(?, '%') ";
-              params.add(value);
-            }else if(k == 'rlike'){
-              whereStr += " AND ${alias + k} LIKE CONCAT('%', ?) ";
-              params.add(value);
-            }else if(key == 'lt'){
-              whereStr += " AND ${alias + k} < ? ";
-              params.add(value);
-            }else if(key == 'gt'){
-              whereStr += " AND ${alias + k} < ? ";
-              params.add(value);
-            }else if(key == 'le'){
-              whereStr += " AND ${alias + k} <= ? ";
-              params.add(value);
-            }else if(key == 'ge'){
-              whereStr += " AND ${alias + k} >= ? ";
-              params.add(value);
-            }else if(key == 'ltgt' && value is List && value.length == 2){
-              whereStr += " AND ${alias + k} < ? AND ${alias + k} > ?  ";
-              params.add(value[0]);
-              params.add(value[1]);
-            }else if(key == 'legt' && value is List && value.length == 2){
-              whereStr += " AND ${alias + k} <= ? AND ${alias + k} > ?  ";
-              params.add(value[0]);
-              params.add(value[1]);
-            }else if(key == 'ltge' && value is List && value.length == 2){
-              whereStr += " AND ${alias + k} < ? AND ${alias + k} >= ?  ";
-              params.add(value[0]);
-              params.add(value[1]);
-            }else if(key == 'lege' && value is List && value.length == 2){
-              whereStr += " AND ${alias + k} <= ? AND ${alias + k} >= ?  ";
-              params.add(value[0]);
-              params.add(value[1]);
-            }else if(key == 'isn'){
-              if(value as bool){
-                whereStr += " AND ${alias + k} IS NULL ";
-              }else{
-                whereStr += " AND ${alias + k} IS NOT NULL ";
-              }
-            }
-            
-          });
+          whereStr += " AND " + whereMap(v, '${alias + k}');
         } else {
           whereStr += " AND ${alias + k} = ? ";
           params.add(v!);
@@ -239,8 +201,202 @@ class Sqlx {
     return this;
   }
 
-  Sqlx and(String s) {
+  String whereList(List list, String attr, {String mode = "and"}) {
+    var str = "";
+    var origin = [...params];
+    try {
+      for (var i = 0; i < list.length - 1; i += 2) {
+        if (i > 0) {
+          if (list[i] != "and" && list[i] != "or") {
+            if (mode == "and") {
+              str += " AND ";
+            } else {
+              str += " OR ";
+            }
+          }
+        }
+
+        switch (list[i]) {
+          case "eq":
+            str += "${attr} = ?";
+            params.add(list[i + 1]);
+            break;
+          case "ne":
+            str += "${attr} <> ?";
+            params.add(list[i + 1]);
+            break;
+          case "like":
+            str += "${attr} LIKE CONCAT('%', ?, '%')";
+            params.add(list[i + 1]);
+            break;
+          case "llike":
+            str += "${attr} LIKE CONCAT(?, '%')";
+            params.add(list[i + 1]);
+            break;
+          case "rlike":
+            str += "${attr} LIKE CONCAT('%', ?)";
+            params.add(list[i + 1]);
+            break;
+          case "lt":
+            str += "${attr} < ?";
+            params.add(list[i + 1]);
+            break;
+          case "gt":
+            str += "${attr} > ?";
+            params.add(list[i + 1]);
+            break;
+          case "le":
+            str += "${attr} <= ?";
+            params.add(list[i + 1]);
+            break;
+          case "ge":
+            str += "${attr} >= ?";
+            params.add(list[i + 1]);
+            break;
+          case "ltgt":
+            str += "(${attr} < ? AND ${attr} > ?)";
+            params.add(list[i + 1][0]);
+            params.add(list[i + 1][1]);
+            break;
+          case "legt":
+            str += "(${attr} <= ? AND ${attr} > ?)";
+            params.add(list[i + 1][0]);
+            params.add(list[i + 1][1]);
+            break;
+          case "ltge":
+            str += "(${attr} < ? AND ${attr} >= ?)";
+            params.add(list[i + 1][0]);
+            params.add(list[i + 1][1]);
+            break;
+          case "lege":
+            str += "(${attr} <= ? AND ${attr} >= ?)";
+            params.add(list[i + 1][0]);
+            params.add(list[i + 1][1]);
+            break;
+          case "and":
+            if (list[i + 1] is List) {
+              str += " (" + whereList(list[i + 1], attr) + ")";
+            } else if (list[i + 1] is Map) {
+              str += " (" + whereMap(list[i + 1], attr) + ")";
+            }
+            break;
+          case "or":
+            if (list[i + 1] is List) {
+              str += " (" + whereList(list[i + 1], attr, mode: "or") + ")";
+            } else if (list[i + 1] is Map) {
+              str += " (" + whereMap(list[i + 1], attr, mode: "or") + ")";
+            }
+
+            break;
+          default:
+        }
+      }
+    } catch (e) {
+      params = origin;
+      return '';
+    }
+
+    return str;
+  }
+
+  String whereMap(Map m, String attr, {String mode = 'and'}) {
+    var str = "";
+    var origin = [...params];
+    try {
+      var i = 0;
+      m.forEach((key, value) {
+        i++;
+        if (i > 1) {
+          if (mode == 'and') {
+            str += " AND ";
+          } else {
+            str += " OR ";
+          }
+        }
+        if (key == 'eq') {
+          str += " ${attr} = ? ";
+          params.add(value);
+        } else if (key == 'ne') {
+          str += " ${attr} <> ? ";
+          params.add(value);
+        } else if (key == 'like') {
+          str += " ${attr} LIKE CONCAT('%', ?, '%') ";
+          params.add(value);
+        } else if (key == 'llike') {
+          str += " ${attr} LIKE CONCAT(?, '%') ";
+          params.add(value);
+        } else if (key == 'rlike') {
+          str += " ${attr} LIKE CONCAT('%', ?) ";
+          params.add(value);
+        } else if (key == 'lt') {
+          str += " ${attr} < ? ";
+          params.add(value);
+        } else if (key == 'gt') {
+          str += " ${attr} < ? ";
+          params.add(value);
+        } else if (key == 'le') {
+          str += " ${attr} <= ? ";
+          params.add(value);
+        } else if (key == 'ge') {
+          str += " ${attr} >= ? ";
+          params.add(value);
+        } else if (key == 'ltgt' && value is List && value.length == 2) {
+          str += " (${attr} < ? AND ${attr} > ?)  ";
+          params.add(value[0]);
+          params.add(value[1]);
+        } else if (key == 'legt' && value is List && value.length == 2) {
+          str += " (${attr} <= ? AND ${attr} > ?)  ";
+          params.add(value[0]);
+          params.add(value[1]);
+        } else if (key == 'ltge' && value is List && value.length == 2) {
+          str += " (${attr} < ? AND ${attr} >= ?)  ";
+          params.add(value[0]);
+          params.add(value[1]);
+        } else if (key == 'lege' && value is List && value.length == 2) {
+          str += " (${attr} <= ? AND ${attr} >= ?) ";
+          params.add(value[0]);
+          params.add(value[1]);
+        } else if (key == 'isn') {
+          if (value as bool) {
+            str += " ${attr} IS NULL ";
+          } else {
+            str += " ${attr} IS NOT NULL ";
+          }
+        } else if (key == "and") {
+          if (value is List) {
+            str += " (" + whereList(value, attr) + ")";
+          } else if (value is Map) {
+            str += " (" + whereMap(value, attr) + ")";
+          }
+        } else if (key == "or") {
+          if (value is List) {
+            str += " (" + whereList(value, attr, mode: "or") + ")";
+          } else if (value is Map) {
+            str += " (" + whereMap(value, attr, mode: "or") + ")";
+          }
+        }
+      });
+    } catch (e) {
+      params = origin;
+      return '';
+    }
+
+    return str;
+  }
+
+  Sqlx and(String s, [List<Object>? list]) {
     whereStr += " AND " + s;
+    if (list != null) {
+      params.addAll(list);
+    }
+    return this;
+  }
+
+  Sqlx or(String s, [List<Object>? list]) {
+    whereStr += " OR " + s;
+    if (list != null) {
+      params.addAll(list);
+    }
     return this;
   }
 
@@ -384,6 +540,10 @@ class Sqlx {
       }
     }
 
+    if (returnStr != "") {
+      sql += " " + returnStr;
+    }
+
     return sql;
   }
 
@@ -462,5 +622,14 @@ class Sqlx {
     sqlMode = "DELETE";
     deleteStr = "DELETE FROM ${tb} ${alias} ";
     return this;
+  }
+
+  Future<List<Map>> query(DbConnection conn, {bool count = false}) async {
+    List<Map> result = [];
+    var rows = await conn.query(collect(count: count), params);
+    if (rows.length > 0) {
+      return DD.rows2list(rows);
+    }
+    return result;
   }
 }

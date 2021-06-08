@@ -143,8 +143,6 @@ class Server {
           req.data = jsonDecode(utf8.decoder.convert(req.body[0]));
         }
 
-        requestMap[req.uuid] = HttpRequestWrap(request);
-
         dispatchList[idx].send(req);
         idx++;
         if (idx >= dispatchList.length) {
@@ -155,9 +153,12 @@ class Server {
           sendLogPort.send(
               'Access  ${request.uri.path}  from ${request.requestedUri.host} ');
         }
-
+        
+        requestMap[req.uuid] = HttpRequestWrap(request);
       } catch (e, s) {
         sendLogPort.send('Error: ${e.toString()}\r\n${s.toString()}');
+        request.response.statusCode = 500;
+        request.response..write('Error: ${e.toString()}\r\n${s.toString()}')..close();
       }
     }
   }

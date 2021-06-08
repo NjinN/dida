@@ -1,13 +1,14 @@
 import 'dart:isolate';
 
 import 'route.dart';
-
 import './router.dart';
-import '../controller/indexController.dart';
 import 'serverRequest.dart';
 import 'serverException.dart';
 import 'serverResponse.dart';
 import '../conf.dart';
+
+import '../controller/indexController.dart';
+import '../controller/commonController.dart';
 
 class Worker {
   static SendPort? sendLogPort;
@@ -50,5 +51,11 @@ class Worker {
     router.get('/listDocs', IndexController.listDocs);
 
     router.post('/post', IndexController.post);
+
+    router.post('/common/query', CommonController.query);
+    router.post('/common/insert', CommonController.insert);
+    router.post('/common/update', CommonController.update);
+    router.post('/common/delete', CommonController.delete);
+
   }
 }
