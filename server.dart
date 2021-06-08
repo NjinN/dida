@@ -16,6 +16,7 @@ import './conf.dart';
 import './utils/dd.dart';
 
 class Server {
+  bool logAccessEnable = CONF['access_log'] as bool;
   HashMap<String, HttpRequestWrap> requestMap = new HashMap();
   List<SendPort> sendLogPortList = [];
   run() async {
@@ -104,8 +105,11 @@ class Server {
           request.response
             ..write("Message queue overflow")
             ..close();
-          sendLogPort.send(
-              'Access ${request.uri.path}  from ${request.requestedUri.host} Rejected');
+          if (logAccessEnable) {
+            sendLogPort.send(
+                'Access ${request.uri.path}  from ${request.requestedUri.host} Rejected');
+          }
+
           continue;
         }
 
@@ -147,8 +151,11 @@ class Server {
           idx = 0;
         }
 
-        sendLogPort.send(
-            'Access  ${request.uri.path}  from ${request.requestedUri.host} ');
+        if (logAccessEnable) {
+          sendLogPort.send(
+              'Access  ${request.uri.path}  from ${request.requestedUri.host} ');
+        }
+
       } catch (e, s) {
         sendLogPort.send('Error: ${e.toString()}\r\n${s.toString()}');
       }
@@ -183,7 +190,7 @@ class Server {
           sendPort.send(response);
         });
       } else if (msg is SendPort) {
-        worker.sendLogPort = msg;
+        worker.setSendLogPort(msg);
       }
     });
 

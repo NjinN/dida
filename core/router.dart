@@ -21,7 +21,7 @@ class Router {
 
 
   initDB() async {
-    await db.initPool(worker);
+    await db.initPool();
   }
 
   addBeforeWare(Function f) {
@@ -181,7 +181,7 @@ class Router {
       response.code = 500;
       response.data = e.toString();
       response.contentType = ContentType.text.toString();
-      worker?.logError('Error: ${e.toString()}\r\n${s.toString()}');
+      Worker.logError('Error: ${e.toString()}\r\n${s.toString()}');
       print('${e.toString()}\r\n${s.toString()}');
     }
 

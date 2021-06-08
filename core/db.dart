@@ -8,7 +8,6 @@ import './dbConnection.dart';
 import 'worker.dart';
 
 class DB {
-  Worker? worker;
   DbConnection? conn;
   ConnectionSettings? settings;
   List<DbConnection>? pool;
@@ -26,18 +25,17 @@ class DB {
         user: dbConf['user'] as String,
         password: dbConf['password'] as String,
         db: dbConf['db'] as String);
-    conn = DbConnection(await MySqlConnection.connect(settings!), worker);
+    conn = DbConnection(await MySqlConnection.connect(settings!));
   }
 
   Future<DbConnection?> makeConn() async {
     if (settings == null) {
       return null;
     }
-    return DbConnection(await MySqlConnection.connect(settings!), worker);
+    return DbConnection(await MySqlConnection.connect(settings!));
   }
 
-  initPool(Worker? w) async {
-    worker = w;
+  initPool() async {
     if (!CONF.containsKey('db')) {
       return;
     }
@@ -57,7 +55,7 @@ class DB {
     }
     pool = [];
     for (var i = 0; i < poolSize; i++) {
-      pool!.add(DbConnection(await MySqlConnection.connect(settings!), worker));
+      pool!.add(DbConnection(await MySqlConnection.connect(settings!)));
     }
   }
 

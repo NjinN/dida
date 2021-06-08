@@ -3,12 +3,10 @@ import './serverResponse.dart';
 import 'worker.dart';
 
 class DbConnection {
-  Worker? worker;
   late MySqlConnection conn;
 
-  DbConnection(MySqlConnection c, Worker? w) {
+  DbConnection(MySqlConnection c) {
     conn = c;
-    worker = w;
   }
 
   Future close() async {
@@ -20,7 +18,7 @@ class DbConnection {
     var rows = await conn.query(sql, values);
 
     if (log) {
-      worker?.logDb(
+      Worker.logDb(
           'Sql: ${sql}\r\nParams: ${values.toString()}\r\nResults: ${rows.length}');
     }
 
@@ -32,7 +30,7 @@ class DbConnection {
     var rows = await conn.queryMulti(sql, values);
 
     if (log) {
-      worker?.logDb(
+      Worker.logDb(
           'Sql: ${sql}\r\nParams: ${values.toString()}\r\nResults: ${rows.length}');
     }
 

@@ -10,11 +10,11 @@ import 'serverResponse.dart';
 import '../conf.dart';
 
 class Worker {
-  SendPort? sendLogPort;
+  static SendPort? sendLogPort;
   static bool logDbEnable = CONF['db_log'] as bool;
   static bool logErrorEnable = CONF['error_log'] as bool;
 
-  logDb(String msg) {
+  static logDb(String msg) {
     if (sendLogPort == null) {
       print('sendLogPort is null');
     }
@@ -23,13 +23,17 @@ class Worker {
     }
   }
 
-  logError(String msg) {
+  static logError(String msg) {
     if (logErrorEnable) {
       sendLogPort?.send(msg);
     }
   }
 
   Router router = Router();
+
+  setSendLogPort(SendPort sp) {
+    Worker.sendLogPort = sp;
+  }
 
   init() async {
     router.worker = this;
