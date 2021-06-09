@@ -171,6 +171,30 @@ class Sqlx {
           whereStr += "AND ${alias + attr} <= ? AND ${alias + attr} >= ? ";
           params.add(v[0]);
           params.add(v[1]);
+          } else if (k.endsWith("__gtlt") && v is List && v.length == 2) {
+          var attr = k.substring(0, k.length - 6);
+
+          whereStr += "AND ${alias + attr} > ? AND ${alias + attr} < ? ";
+          params.add(v[0]);
+          params.add(v[1]);
+        } else if (k.endsWith("__gelt") && v is List && v.length == 2) {
+          var attr = k.substring(0, k.length - 6);
+
+          whereStr += "AND ${alias + attr} >= ? AND ${alias + attr} < ? ";
+          params.add(v[0]);
+          params.add(v[1]);
+        } else if (k.endsWith("__gtle") && v is List && v.length == 2) {
+          var attr = k.substring(0, k.length - 6);
+
+          whereStr += "AND ${alias + attr} > ? AND ${alias + attr} <= ? ";
+          params.add(v[0]);
+          params.add(v[1]);
+        } else if (k.endsWith("__gele") && v is List && v.length == 2) {
+          var attr = k.substring(0, k.length - 6);
+
+          whereStr += "AND ${alias + attr} >= ? AND ${alias + attr} <= ? ";
+          params.add(v[0]);
+          params.add(v[1]);
         } else if (v is List) {
           var list = v;
           if (k.endsWith("__in") && list.length > 0) {
@@ -273,6 +297,26 @@ class Sqlx {
             params.add(list[i + 1][0]);
             params.add(list[i + 1][1]);
             break;
+          case "gtlt":
+            str += "(${attr} > ? AND ${attr} < ?)";
+            params.add(list[i + 1][0]);
+            params.add(list[i + 1][1]);
+            break;
+          case "gelt":
+            str += "(${attr} >= ? AND ${attr} < ?)";
+            params.add(list[i + 1][0]);
+            params.add(list[i + 1][1]);
+            break;
+          case "gtle":
+            str += "(${attr} > ? AND ${attr} <= ?)";
+            params.add(list[i + 1][0]);
+            params.add(list[i + 1][1]);
+            break;
+          case "gele":
+            str += "(${attr} >= ? AND ${attr} <= ?)";
+            params.add(list[i + 1][0]);
+            params.add(list[i + 1][1]);
+            break;            
           case "and":
             if (list[i + 1] is List) {
               str += " (" + whereList(list[i + 1], attr) + ")";
@@ -354,6 +398,22 @@ class Sqlx {
           params.add(value[1]);
         } else if (key == 'lege' && value is List && value.length == 2) {
           str += " (${attr} <= ? AND ${attr} >= ?) ";
+          params.add(value[0]);
+          params.add(value[1]);
+        } else if (key == 'gtlt' && value is List && value.length == 2) {
+          str += " (${attr} > ? AND ${attr} < ?)  ";
+          params.add(value[0]);
+          params.add(value[1]);
+        } else if (key == 'gelt' && value is List && value.length == 2) {
+          str += " (${attr} >= ? AND ${attr} < ?)  ";
+          params.add(value[0]);
+          params.add(value[1]);
+        } else if (key == 'gtle' && value is List && value.length == 2) {
+          str += " (${attr} > ? AND ${attr} <= ?)  ";
+          params.add(value[0]);
+          params.add(value[1]);
+        } else if (key == 'gele' && value is List && value.length == 2) {
+          str += " (${attr} >= ? AND ${attr} <= ?) ";
           params.add(value[0]);
           params.add(value[1]);
         } else if (key == 'isn') {
