@@ -153,12 +153,14 @@ class Server {
           sendLogPort.send(
               'Access  ${request.uri.path}  from ${request.requestedUri.host} ');
         }
-        
+
         requestMap[req.uuid] = HttpRequestWrap(request);
       } catch (e, s) {
         sendLogPort.send('Error: ${e.toString()}\r\n${s.toString()}');
         request.response.statusCode = 500;
-        request.response..write('Error: ${e.toString()}\r\n${s.toString()}')..close();
+        request.response
+          ..write('Error: ${e.toString()}\r\n${s.toString()}')
+          ..close();
       }
     }
   }
@@ -216,6 +218,19 @@ class Server {
   }
 }
 
-main() async {
+main(List<String> args) async {
+  try {
+    args.forEach((arg) {
+      if (arg.startsWith('-w')) {
+        CONF['worker_count'] = int.parse(arg.substring(2));
+      }else if(arg.startsWith('-c')){
+        (CONF['db'] as Map)['poolSize'] = int.parse(arg.substring(2));
+      }
+    });
+  } catch (e) {
+    print(e);
+    exit(1);
+  }
+
   Server().run();
 }
