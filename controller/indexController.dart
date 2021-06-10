@@ -17,7 +17,8 @@ class IndexController {
     response.contentType = ContentType.binary.toString();
   }
 
-  static post(ServerRequest request, ServerResponse response, DbConnection conn) async {
+  static post(
+      ServerRequest request, ServerResponse response, DbConnection conn) async {
     // DD.checkParams(request.data, ['usr_phone', 'psw']);
     Sqlx x = Sqlx();
     x

@@ -18,7 +18,7 @@ import './utils/dd.dart';
 class Server {
   bool logAccessEnable = CONF['access_log'] as bool;
   HashMap<String, HttpRequestWrap> requestMap = new HashMap();
-  List<SendPort> sendLogPortList = [];
+  List<SendPort> sendLogPortList = [ ];
   run() async {
     print("start dispatcher");
     var uuid = Uuid();
@@ -233,4 +233,5 @@ main(List<String> args) async {
   }
 
   Server().run();
+
 }
