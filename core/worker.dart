@@ -44,6 +44,10 @@ class Worker {
       // throw ServerException("Auth fail", code:200);
     });
 
+    router.addAfterWare((ServerRequest req, ServerResponse res) async {
+      // throw ServerException("Auth fail", code:200);
+    });
+
     router.get('/', IndexController.index, useDB: false);
 
     router.get('/file', IndexController.file, useDB: false);
