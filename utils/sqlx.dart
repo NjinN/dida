@@ -44,6 +44,14 @@ class Sqlx {
     return this;
   }
 
+  Sqlx? when(bool cond) {
+    if (cond) {
+      return this;
+    } else {
+      return null;
+    }
+  }
+
   Sqlx select(dynamic sel, {String alias = ""}) {
     sqlMode = "SELECT";
     if (sel is String) {
@@ -171,7 +179,7 @@ class Sqlx {
           whereStr += "AND ${alias + attr} <= ? AND ${alias + attr} >= ? ";
           params.add(v[0]);
           params.add(v[1]);
-          } else if (k.endsWith("__gtlt") && v is List && v.length == 2) {
+        } else if (k.endsWith("__gtlt") && v is List && v.length == 2) {
           var attr = k.substring(0, k.length - 6);
 
           whereStr += "AND ${alias + attr} > ? AND ${alias + attr} < ? ";
@@ -316,7 +324,7 @@ class Sqlx {
             str += "(${attr} >= ? AND ${attr} <= ?)";
             params.add(list[i + 1][0]);
             params.add(list[i + 1][1]);
-            break;            
+            break;
           case "and":
             if (list[i + 1] is List) {
               str += " (" + whereList(list[i + 1], attr) + ")";
