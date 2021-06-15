@@ -166,11 +166,11 @@ class Server {
   }
 
   void clearQueue(HashMap<String, HttpRequestWrap> queue, int timeout) {
-    int nowSecond = DateTime.now().second;
+    int nowMs = DateTime.now().millisecondsSinceEpoch;
     var keys = queue.keys;
     for (var k in keys) {
       var reqw = queue[k]!;
-      if (nowSecond - reqw.timeStamp > timeout) {
+      if (nowMs - reqw.timeStamp > timeout * 1000) {
         reqw.request.response.statusCode = 504;
         reqw.request.response
           ..write("Timeout")

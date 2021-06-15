@@ -22,6 +22,6 @@ class HttpRequestWrap {
 
   HttpRequestWrap(HttpRequest req) {
     request = req;
-    timeStamp = DateTime.now().second;
+    timeStamp = DateTime.now().millisecondsSinceEpoch;
   }
 }
