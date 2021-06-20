@@ -87,7 +87,7 @@ class Server {
     }
 
     HttpServer requestServer = await HttpServer.bind(
-        InternetAddress.loopbackIPv4, CONF['listen_port'] as int);
+        InternetAddress.anyIPv4, CONF['listen_port'] as int);
 
     print("listening port: " + (CONF['listen_port'] as int).toString());
 
