@@ -59,7 +59,7 @@ class Router {
   }
 
   Future<ServerResponse> handleRequest(ServerRequest request) async {
-    ServerResponse response = ServerResponse();
+    ServerResponse response = ServerResponse(request);
     response.uuid = request.uuid;
     try {
       if (beforeWare.length > 0) {
