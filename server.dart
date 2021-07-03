@@ -27,7 +27,7 @@ class Server {
     logger.init();
     print('Logger started');
 
-    for (var i = 0; i < workerCount + 1; i++) {
+    for (var i = 0; i < workerCount; i++) {
       await Isolate.spawn(createWorker, list[i].sendPort);
       print("Worker${i} started");
     }
