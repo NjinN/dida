@@ -66,12 +66,13 @@ class DB {
         throw Exception("DB conn pool have not init");
       }
       if (newConn) {
-        conn = makeConn();
+        conn = await makeConn();
       } else {
         conn = await applyPool().catchError((e) {
           throw e;
         });
       }
+
       if (conn is! DbConnection) {
         throw Exception("Fail to apply db conn");
       }
@@ -106,7 +107,18 @@ class DB {
       //   }
       // });
     } catch (e) {
-      if (e is MySqlException && e.errorNumber == 1043) {
+      if (e is StateError && !newConn &&
+          e.message == 'Cannot write to socket, it is closed') {
+        if (conn is DbConnection) {
+          try {
+            conn.close();
+          } catch (e) {
+            print(e.toString());
+          }
+          conn = null;
+        }
+        await usePool(res, f, newConn: true);
+      } else if (e is MySqlException && e.errorNumber == 104) {
         if (conn is DbConnection) {
           try {
             conn.close();
