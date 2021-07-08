@@ -55,6 +55,8 @@ main(List<String> args) async {
         CONF['worker_count'] = int.parse(arg.substring(2));
       } else if (arg.startsWith('-c')) {
         (CONF['db'] as Map)['poolSize'] = int.parse(arg.substring(2));
+      } else if (arg.startsWith('-p')) {
+        CONF['listen_port'] = int.parse(arg.substring(2));
       }
     });
   } catch (e) {
