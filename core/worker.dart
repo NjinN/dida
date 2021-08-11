@@ -81,6 +81,7 @@ class Worker {
 
     try {
       ServerRequest req = ServerRequest(request);
+      req.init();
       requestMap[req.uuid] = HttpRequestWrap(request);
       if (logAccessEnable) {
         logAccess(
