@@ -8,6 +8,7 @@ import 'serverException.dart';
 import './db.dart';
 import '../conf.dart';
 import 'worker.dart';
+import '../utils/dd.dart';
 
 class Router {
   Worker? worker;
@@ -18,7 +19,6 @@ class Router {
   DB db = DB();
   bool hasCrossDomain = CONF.containsKey('cross_domain') &&
       (CONF['cross_domain'] as List).length > 0;
-
 
   initDB() async {
     await db.initPool();
@@ -146,7 +146,7 @@ class Router {
 
         if (referer != '') {
           for (var address in allowHosts) {
-            if (referer.startsWith(address)) {
+            if (DD.eqDomainRule(referer, address)) {
               response.headers['Allow'] = ['OPTIONS', 'GET', 'POST'];
               response.headers['Access-Control-Allow-Credentials'] = ['true'];
               response.headers['Access-Control-Allow-Origin'] = [address];
@@ -193,7 +193,7 @@ class Router {
       String referer = request.headers['referer']?[0] ?? '';
       if (!referer.startsWith(request.origin)) {
         for (var address in CONF['cross_domain'] as List) {
-          if (referer.startsWith(address)) {
+          if (DD.eqDomainRule(referer, address)) {
             response.headers['Access-Control-Allow-Origin'] = [address];
             return;
           }
